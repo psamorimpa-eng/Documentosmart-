@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TIC Orça</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--navy:#102a43;--blue:#1f5f99;--bg:#f5f7fa;--line:#d8e1ea;--text:#172033;--muted:#66788a;--ok:#18794e;--warn:#9a6700;--bad:#a33a3a}
+*{box-sizing:border-box}body{margin:0;font:14px "Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}.side{background:var(--navy);color:white;padding:22px 15px;position:sticky;top:0;height:100vh}
+.brand{font-size:23px;font-weight:800}.sub{font-size:12px;opacity:.7;margin:5px 0 22px}
+.nav button{border:0;background:transparent;color:#d9e6f2;width:100%;text-align:left;padding:10px 12px;border-radius:8px;margin:2px 0}
+.nav button.active,.nav button:hover{background:#204663;color:white}
+.main{padding:22px;min-width:0}.top{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-bottom:16px}
+h1{font-size:25px;margin:0}h2{font-size:18px;margin:0}.muted{color:var(--muted);font-size:12px}
+.card{background:white;border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}.s3{grid-column:span 3}.s4{grid-column:span 4}.s6{grid-column:span 6}.s8{grid-column:span 8}.s12{grid-column:span 12}
+.kpi{font-size:27px;font-weight:800;margin-top:5px}.label{font-size:11px;text-transform:uppercase;color:var(--muted);font-weight:700;letter-spacing:.05em}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.btn{border:0;background:var(--blue);color:white;padding:9px 12px;border-radius:8px;font-weight:700}.btn.alt{background:#eef3f7;color:#17324d;border:1px solid var(--line)}.btn.red{background:#9e3a3a}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{border-bottom:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}th{font-size:10px;text-transform:uppercase;color:#506276;background:#fafbfd;position:sticky;top:0}
+.scroll{overflow:auto;max-height:62vh}.badge{display:inline-block;padding:3px 7px;border-radius:999px;font-size:10px;font-weight:700;background:#edf2f7}.ok{background:#e5f4eb;color:var(--ok)}.warn{background:#fff3cd;color:var(--warn)}.bad{background:#fde5e5;color:var(--bad)}
+.form{display:grid;grid-template-columns:repeat(12,1fr);gap:9px}.field{grid-column:span 4}.w6{grid-column:span 6}.w12{grid-column:span 12}label{display:block;font-size:11px;font-weight:700;color:#47586a;margin-bottom:4px}
+input,select,textarea{width:100%;border:1px solid #ccd7e2;border-radius:7px;padding:8px 9px;background:white}textarea{min-height:70px;resize:vertical}
+.head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.notice{background:#fff7d6;border:1px solid #ecd779;border-radius:8px;padding:9px 11px;margin:10px 0}.success{background:#e8f6ee;border-color:#b9dfc8}.error{background:#fdeaea;border-color:#e6b8b8}
+.mono{font-family:Consolas,monospace}.hidden{display:none!important}.projectSelect{min-width:270px}
+dialog{width:min(800px,95vw);border:0;border-radius:13px;padding:0;box-shadow:0 25px 80px rgba(0,0,0,.28)}dialog::backdrop{background:rgba(10,25,40,.52)}.modal{padding:18px}.x{border:0;background:transparent;font-size:22px}.progress{height:8px;background:#edf1f5;border-radius:999px;overflow:hidden}.progress>div{height:100%;background:var(--blue)}
+.filetag{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:3px 6px;margin:2px;background:#f8fafc}
+@media(max-width:900px){.app{grid-template-columns:1fr}.side{height:auto;position:relative}.s3,.s4,.s6,.s8{grid-column:span 12}.field,.w6{grid-column:span 12}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side">
+  <div class="brand">TIC Orça</div>
+  <div class="sub">Orçamentos e Aditivos • Local First</div>
+  <div class="nav" id="nav">
+    <button data-p="dash" class="active">Dashboard</button>
+    <button data-p="projects">Projetos</button>
+    <button data-p="docs">Documentos</button>
+    <button data-p="banks">Bancos de Preços</button>
+    <button data-p="budget">Orçamento</button>
+    <button data-p="qty">Memória de Quantidades</button>
+    <button data-p="cpu">Comparativo de CPUs</button>
+    <button data-p="dmt">DMT e Transportes</button>
+    <button data-p="trace">Rastreabilidade</button>
+    <button data-p="pending">Premissas e Pendências</button>
+    <button data-p="qa">QA / QC</button>
+    <button data-p="audit">Auditoria</button>
+    <button data-p="backup">Backup e Exportação</button>
+  </div>
+</aside>
+<main class="main">
+  <div class="top">
+    <div><h1 id="title">Dashboard</h1><div class="muted" id="subtitle">Dados gravados neste navegador</div></div>
+    <select id="projectSelect" class="projectSelect"></select>
+  </div>
+  <div id="msg"></div><div id="content"></div>
+</main>
+</div>
+
+<dialog id="modal"><div class="modal"><div class="head"><h2 id="modalTitle">Novo</h2><button class="x" onclick="document.getElementById('modal').close()">×</button></div><div id="modalBody"></div></div></dialog>
+
+<script>
+(function(){
+const K="tic_orca_local_v3";
+const empty={projects:[],docs:[],banks:[],priceItems:[],budget:[],qty:[],cpu:[],dmt:[],trace:[],pending:[],qa:[],audit:[],settings:{bdi:0,updateFactor:1}};
+let db=load(), page="dash", projectId=db.projects[0]&&db.projects[0].id||"";
+const $=id=>document.getElementById(id);
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function load(){try{return Object.assign({},empty,JSON.parse(localStorage.getItem(K)||"{}"))}catch(e){return JSON.parse(JSON.stringify(empty))}}
+function save(action){localStorage.setItem(K,JSON.stringify(db));if(action){db.audit.unshift({id:uid(),at:new Date().toISOString(),action:action,projectId:projectId});localStorage.setItem(K,JSON.stringify(db))}}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
+function money(n){return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(n||0))}
+function num(n){return new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3}).format(Number(n||0))}
+function prj(){return db.projects.find(x=>x.id===projectId)||null}
+function rows(arr){return projectId?arr.filter(x=>!x.projectId||x.projectId===projectId):arr}
+function badge(s){s=String(s||"-");let c=/ok|valid|approved|precificado|resolvido/i.test(s)?"ok":/pend|abert|prem|validar|review/i.test(s)?"warn":/erro|cancel|bloq/i.test(s)?"bad":"";return '<span class="badge '+c+'">'+esc(s)+'</span>'}
+function table(h,r){return '<div class="scroll"><table><thead><tr>'+h.map(x=>"<th>"+x+"</th>").join("")+'</tr></thead><tbody>'+r.join("")+'</tbody></table></div>'}
+function message(t,type){$("msg").innerHTML=t?'<div class="notice '+(type||"")+'">'+esc(t)+'</div>':""}
+function modal(title,body){$("modalTitle").textContent=title;$("modalBody").innerHTML=body;$("modal").showModal()}
+function closeModal(){$("modal").close()}
+function titles(){return {dash:"Dashboard",projects:"Projetos",docs:"Documentos",banks:"Bancos de Preços",budget:"Orçamento",qty:"Memória de Quantidades",cpu:"Comparativo de CPUs",dmt:"DMT e Transportes",trace:"Rastreabilidade",pending:"Premissas e Pendências",qa:"QA / QC",audit:"Auditoria",backup:"Backup e Exportação"}}
+function refreshSelect(){let s='<option value="">Todos / nenhum</option>';db.projects.forEach(p=>s+='<option value="'+p.id+'" '+(p.id===projectId?"selected":"")+'>'+esc((p.code?p.code+" • ":"")+p.name)+'</option>');$("projectSelect").innerHTML=s}
+function setPage(p){page=p;document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.p===p));$("title").textContent=titles()[p]||"TIC Orça";$("subtitle").textContent=(prj()?prj().name+" • ":"")+"Dados gravados neste navegador";message("");render()}
+document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>setPage(b.dataset.p));
+$("projectSelect").onchange=e=>{projectId=e.target.value;render()};
+function render(){if(page==="dash")dash();else if(page==="projects")projects();else if(page==="docs")docs();else if(page==="banks")banks();else if(page==="budget")budget();else if(page==="qty")qty();else if(page==="cpu")cpu();else if(page==="dmt")dmt();else if(page==="trace")trace();else if(page==="pending")pending();else if(page==="qa")qa();else if(page==="audit")audit();else if(page==="backup")backup()}
+function dash(){
+ let b=rows(db.budget), d=rows(db.docs), pe=rows(db.pending).filter(x=>x.status!=="Resolvido"), total=b.reduce((a,x)=>a+Number(x.total||0),0);
+ $("content").innerHTML='<div class="grid">'+
+ '<div class="card s3"><div class="label">Valor do orçamento</div><div class="kpi">'+money(total)+'</div></div>'+
+ '<div class="card s3"><div class="label">Itens</div><div class="kpi">'+b.length+'</div></div>'+
+ '<div class="card s3"><div class="label">Documentos</div><div class="kpi">'+d.length+'</div></div>'+
+ '<div class="card s3"><div class="label">Pendências</div><div class="kpi">'+pe.length+'</div></div>'+
+ '<div class="card s12"><div class="head"><h2>Fluxo de trabalho</h2></div><div class="grid">'+
+ ["1. Criar projeto","2. Anexar projetos/memórias","3. Importar bancos de preços","4. Montar orçamento","5. Registrar quantidades e CPUs","6. Fechar rastreabilidade e QA"].map((x,i)=>'<div class="card s4"><b>'+x+'</b><div class="muted" style="margin-top:5px">'+["Código, trecho, disciplina e revisão.","PDF, DWG, DOCX, XLSX, ZIP e evidências.","CSV/XLSX com código, descrição, unidade e PU.","Quantidade × PU com BDI e atualização.","Memória, DMT e comparação técnica.","Projeto → quantidade → CPU → banco → valor."][i]+'</div></div>').join("")+
+ '</div></div></div>'
+}
+function projects(){
+ let r=db.projects.map(p=>'<tr><td class="mono">'+esc(p.code||"-")+'</td><td><b>'+esc(p.name)+'</b><div class="muted">'+esc(p.description||"")+'</div></td><td>'+esc(p.trecho||"-")+'</td><td>'+esc(p.discipline||"-")+'</td><td>'+badge(p.status||"Em elaboração")+'</td><td><button class="btn alt" data-open="'+p.id+'">Abrir</button></td></tr>');
+ $("content").innerHTML='<div class="card"><div class="head"><h2>Projetos</h2><button class="btn" id="newProject">Novo projeto</button></div>'+table(["Código","Projeto","Trecho","Disciplina","Status",""],r)+'</div>';
+ $("newProject").onclick=()=>modal("Novo projeto",'<form id="fProject" class="form"><div class="field w6"><label>Código</label><input name="code" placeholder="TFA-LD-67+800"></div><div class="field w6"><label>Nome</label><input name="name" required></div><div class="field"><label>Trecho</label><input name="trecho"></div><div class="field"><label>Disciplina</label><input name="discipline"></div><div class="field"><label>Status</label><select name="status"><option>Em elaboração</option><option>Em análise</option><option>Orçamento</option><option>Validado</option></select></div><div class="field w12"><label>Descrição</label><textarea name="description"></textarea></div><div class="field w12"><button class="btn">Salvar</button></div></form>');
+ setTimeout(()=>{let f=$("fProject");if(f)f.onsubmit=e=>{e.preventDefault();let x=Object.fromEntries(new FormData(f));let p=Object.assign({id:uid(),createdAt:new Date().toISOString()},x);db.projects.unshift(p);projectId=p.id;save("Projeto criado: "+p.name);closeModal();refreshSelect();projects()}},0);
+ document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{projectId=b.dataset.open;refreshSelect();setPage("dash")})
+}
+function docs(){
+ if(!prj())return $("content").innerHTML='<div class="notice">Selecione um projeto.</div>';
+ let r=rows(db.docs).map(x=>'<tr><td class="mono">'+esc(x.code||"-")+'</td><td><b>'+esc(x.name)+'</b></td><td>'+esc(x.type||"-")+'</td><td>'+esc(x.rev||"-")+'</td><td>'+badge(x.status||"Recebido")+'</td><td>'+esc(x.size||"-")+'</td></tr>');
+ $("content").innerHTML='<div class="card"><div class="head"><h2>Documentos</h2><button class="btn" id="addDoc">Anexar documentos</button></div>'+table(["Código","Arquivo","Tipo","Rev.","Status","Tamanho"],r)+'<div class="notice">Os arquivos são registrados no navegador. Use Backup para guardar uma cópia dos dados do sistema.</div></div>';
+ $("addDoc").onclick=()=>modal("Anexar documentos",'<form id="fDoc" class="form"><div class="field w12"><label>Arquivos</label><input name="files" type="file" multiple required></div><div class="field"><label>Código base</label><input name="code"></div><div class="field"><label>Tipo</label><select name="type"><option>Projeto</option><option>Memória de cálculo</option><option>Especificação</option><option>Sondagem</option><option>Relatório</option><option>Evidência</option></select></div><div class="field"><label>Revisão</label><input name="rev"></div><div class="field w12"><button class="btn">Registrar</button></div></form>');
+ setTimeout(()=>{let f=$("fDoc");if(f)f.onsubmit=e=>{e.preventDefault();let fd=new FormData(f),fs=f.files.files;Array.from(fs).forEach((file,i)=>db.docs.unshift({id:uid(),projectId:projectId,name:file.name,size:(file.size/1024/1024).toFixed(2)+" MB",mime:file.type,code:(fd.get("code")||"")+(fs.length>1?"-"+(i+1):""),type:fd.get("type"),rev:fd.get("rev"),status:"Recebido",createdAt:new Date().toISOString()}));save(fs.length+" documento(s) registrado(s)");closeModal();docs()}},0)
+}
+function banks(){
+ let br=db.banks.map(b=>'<tr><td><b>'+esc(b.name)+'</b></td><td>'+esc(b.source||"-")+'</td><td>'+esc(b.base||"-")+'</td><td>'+db.priceItems.filter(x=>x.bankId===b.id).length+'</td><td>'+badge(b.status||"Ativo")+'</td></tr>');
+ $("content").innerHTML='<div class="card"><div class="head"><h2>Bancos de Preços</h2><div><button class="btn" id="newBank">Cadastrar banco</button> <button class="btn alt" id="importBank">Importar CSV/XLSX</button></div></div>'+table(["Banco","Fonte","Data-base","Itens","Status"],br)+'</div><div class="card" style="margin-top:12px"><div class="head"><h2>Itens de preço</h2><input id="priceSearch" placeholder="Buscar código ou descrição" style="max-width:320px"></div><div id="priceTable"></div></div>';
+ function draw(q){q=(q||"").toLowerCase();let items=db.priceItems.filter(x=>!q||(x.code+" "+x.description+" "+x.bank).toLowerCase().includes(q)).slice(0,1000);$("priceTable").innerHTML=table(["Banco","Código","Descrição","Un.","PU"],items.map(x=>'<tr><td>'+esc(x.bank)+'</td><td class="mono">'+esc(x.code)+'</td><td>'+esc(x.description)+'</td><td>'+esc(x.unit||"-")+'</td><td>'+money(x.price)+'</td></tr>'))}
+ draw();$("priceSearch").oninput=e=>draw(e.target.value);
+ $("newBank").onclick=()=>modal("Cadastrar banco",'<form id="fBank" class="form"><div class="field w6"><label>Nome</label><input name="name" required placeholder="DER/SP 01/2026"></div><div class="field"><label>Fonte</label><input name="source"></div><div class="field"><label>Data-base</label><input name="base" placeholder="01/2026"></div><div class="field w12"><button class="btn">Salvar</button></div></form>');
+ setTimeout(()=>{let f=$("fBank");if(f)f.onsubmit=e=>{e.preventDefault();let x=Object.fromEntries(new FormData(f));db.banks.unshift(Object.assign({id:uid(),status:"Ativo"},x));save("Banco cadastrado: "+x.name);closeModal();banks()}},0);
+ $("importBank").onclick=()=>modal("Importar banco",'<form id="fImport" class="form"><div class="field w6"><label>Banco</label><select name="bankId">'+db.banks.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join("")+'</select></div><div class="field w6"><label>Arquivo CSV/XLSX</label><input name="file" type="file" accept=".csv,.xlsx,.xls" required></div><div class="field w12"><div class="notice">A importação tenta reconhecer: código, descrição/serviço, unidade e preço/PU. Se a planilha tiver cabeçalho diferente, o sistema usa as quatro primeiras colunas.</div></div><div class="field w12"><button class="btn">Importar</button></div></form>');
+ setTimeout(()=>{let f=$("fImport");if(f)f.onsubmit=e=>{e.preventDefault();let file=f.file.files[0],bid=f.bankId.value,bk=db.banks.find(x=>x.id===bid);let rd=new FileReader();rd.onload=ev=>{try{let wb=XLSX.read(ev.target.result,{type:"array"}),ws=wb.Sheets[wb.SheetNames[0]],data=XLSX.utils.sheet_to_json(ws,{defval:""});let count=0;data.forEach(o=>{let ks=Object.keys(o),pick=(terms,ix)=>{let k=ks.find(k=>terms.some(t=>k.toLowerCase().includes(t)));return k?o[k]:o[ks[ix]]};let code=pick(["cód","cod","item"],0),desc=pick(["descr","serv","nome"],1),unit=pick(["unid","un."],2),price=pick(["preço","preco","pu","custo","valor"],3);price=Number(String(price).replace(/\./g,"").replace(",","."))||Number(price)||0;if(code||desc){db.priceItems.push({id:uid(),bankId:bid,bank:bk.name,code:String(code||""),description:String(desc||""),unit:String(unit||""),price:price});count++}});save("Importados "+count+" itens para "+bk.name);closeModal();banks()}catch(err){alert("Erro ao importar: "+err.message)}};rd.readAsArrayBuffer(file)}},0)
+}
+function budget(){
+ if(!prj())return $("content").innerHTML='<div class="notice">Selecione um projeto.</div>';
+ let list=rows(db.budget), total=list.reduce((a,x)=>a+Number(x.total||0),0);
+ let r=list.map(x=>'<tr><td class="mono">'+esc(x.item)+'</td><td>'+esc(x.eap||"-")+'</td><td><b>'+esc(x.service)+'</b><div class="muted">'+esc(x.cpu||"")+'</div></td><td>'+esc(x.unit||"-")+'</td><td>'+num(x.qty)+'</td><td>'+esc(x.bank||"-")+'</td><td>'+money(x.pu)+'</td><td>'+num(Number(x.bdi||0)*100)+'%</td><td><b>'+money(x.total)+'</b></td><td>'+badge(x.status)+'</td></tr>');
+ $("content").innerHTML='<div class="card"><div class="head"><h2>Orçamento • '+esc(prj().name)+'</h2><div><b>'+money(total)+'</b> <button class="btn" id="addItem">Novo item</button></div></div>'+table(["ID","EAP","Serviço / CPU","Un.","Qtd.","Banco","PU Base","BDI","Total","Status"],r)+'</div>';
+ $("addItem").onclick=()=>modal("Novo item de orçamento",'<form id="fBudget" class="form"><div class="field"><label>ID</label><input name="item" required placeholder="ADT-GEO-001"></div><div class="field"><label>EAP</label><input name="eap"></div><div class="field w6"><label>Serviço</label><input name="service" required></div><div class="field"><label>Unidade</label><input name="unit"></div><div class="field"><label>Quantidade</label><input name="qty" type="number" step="any"></div><div class="field"><label>CPU</label><input name="cpu"></div><div class="field"><label>Banco</label><input name="bank"></div><div class="field"><label>PU base</label><input name="pu" type="number" step="any" value="0"></div><div class="field"><label>Fator atualização</label><input name="factor" type="number" step="any" value="'+(db.settings.updateFactor||1)+'"></div><div class="field"><label>BDI</label><input name="bdi" type="number" step="any" value="'+(db.settings.bdi||0)+'"></div><div class="field"><label>Status</label><select name="status"><option>Pendente</option><option>Precificado</option><option>A validar</option><option>Validado</option></select></div><div class="field w12"><label>Observações / método executivo</label><textarea name="notes"></textarea></div><div class="field w12"><button class="btn">Salvar</button></div></form>');
+ setTimeout(()=>{let f=$("fBudget");if(f)f.onsubmit=e=>{e.preventDefault();let x=Object.fromEntries(new FormData(f));x.qty=Number(x.qty||0);x.pu=Number(x.pu||0);x.factor=Number(x.factor||1);x.bdi=Number(x.bdi||0);x.total=x.qty*x.pu*x.factor*(1+x.bdi);x.id=uid();x.projectId=projectId;db.budget.push(x);save("Item de orçamento criado: "+x.item);closeModal();budget()}},0)
+}
+function qty(){
+ if(!prj())return $("content").innerHTML='<div class="notice">Selecione um projeto.</div>';
+ let r=rows(db.qty).map(x=>'<tr><td class="mono">'+esc(x.item||"-")+'</td><td>'+esc(x.service)+'</td><td>'+num(x.qty)+'</td><td>'+esc(x.unit||"-")+'</td><td>'+badge(x.classification)+'</td><td>'+esc(x.calc||"-")+'</td><td>'+esc(x.source||"-")+'</td><td>'+badge(x.status)+'</td></tr>');
+ $("content").innerHTML='<div class="card"><div class="head"><h2>Memória de Quantidades</h2><button class="btn" id="addQty">Nova memória</button></div>'+table(["Item","Serviço","Qtd.","Un.","Classificação","Cálculo","Fonte","Status"],r)+'</div>';
+ $("addQty").onclick=()=>modal("Nova memória",'<form id="fQty" class="form"><div class="field"><label>Item orçamento</label><input name="item"></div><div class="field w6"><label>Serviço</label><input name="service" required></div><div class="field"><label>Quantidade</label><input name="qty" type="number" step="any"></div><div class="field"><label>Unidade</label><input name="unit"></div><div class="field"><label>Classificação</label><select name="classification"><option>Fato</option><option>Inferência de Engenharia</option><option>Premissa</option><option>Conferência</option></select></div><div class="field w12"><label>Cálculo</label><textarea name="calc"></textarea></div><div class="field w6"><label>Documento / fonte</label><input name="source"></div><div class="field w6"><label>Status</label><select name="status"><option>A conferir</option><option>Validado Projeto</option><option>Validado Orçamento</option></select></div><div class="field w12"><button class="btn">Salvar</button></div></form>');
+ setTimeout(()=>{let f=$("fQty");if(f)f.onsubmit=e=>{e.preventDefault();let x=Object.fromEntries(new FormData(f));x.id=uid();x.projectId=projectId;x.qty=Number(x.qty||0);db.qty.push(x);save("Memória de quantidade criada");closeModal();qty()}},0)
+}
+function cpu(){
+ if(!prj())return $("content").innerHTML='<div class="notice">Selecione um projeto.</div>';
+ let r=rows(db.cpu).map(x=>'<tr><td>'+esc(x.service)+'</td><td>'+esc(x.bank)+'</td><td class="mono">'+esc(x.code)+'</td><td>'+money(x.price)+'</td><td>'+badge(x.fit)+'</td><td>'+badge(x.decision)+'</td><td>'+esc(x.justification||"-")+'</td></tr>');
+ $("content").innerHTML='<div class="card"><div class="head"><h2>Comparativo de CPUs</h2><button class="btn" id="addCpu">Nova comparação</button></div>'+table(["Serviço","Banco","Código","PU","Aderência","Decisão","Justificativa"],r)+'</div>';
+ $("addCpu").onclick=()=>modal("Comparar CPU",'<form id="fCpu" class="form"><div class="field w6"><label>Serviço</label><input name="service" required></div><div class="field"><label>Banco</label><input name="bank"></div><div class="field"><label>Código</label><input name="code"></div><div class="field"><label>PU</label><input name="price" type="number" step="any"></div><div class="field"><label>Aderência</label><select name="fit"><option>Alta</option><option>Média</option><option>Baixa</option><option>Não equivalente</option></select></div><div class="field"><label>Decisão</label><select name="decision"><option>Selecionado</option><option>Alternativa</option><option>Não equivalente</option><option>Pendente</option></select></div><div class="field w12"><label>Justificativa</label><textarea name="justification"></textarea></div><div class="field w12"><button class="btn">Salvar</button></div></form>');
+ setTimeout(()=>{let f=$("fCpu");if(f)f.onsubmit=e=>{e.preventDefault();let x=Object.fromEntries(new FormData(f));x.id=uid();x.projectId=projectId;x.price=Number(x.price||0);db.cpu.push(x);save("Comparativo CPU criado");closeModal();cpu()}},0)
+}
+function dmt(){
+ if(!prj())return $("content").innerHTML='<div class="notice">Selecione um projeto.</div>';
+ let r=rows(db.dmt).map(x=>'<tr><td>'+esc(x.material)+'</td><td>'+esc(x.origin)+'</td><td>'+esc(x.destination)+'</td><td>'+num(x.volume)+'</td><td>'+num(x.distance)+'</td><td>'+num(Number(x.volume||0)*Number(x.distance||0))+'</td><td>'+esc(x.evidence||"-")+'</td></tr>');
+ $("content").innerHTML='<div class="card"><div class="head"><h2>DMT e Transportes</h2><button class="btn" id="addDmt">Novo transporte</button></div>'+table(["Material","Origem","Destino","Volume m³","DMT km","m³×km","Evidência"],r)+'</div>';
+ $("addDmt").onclick=()=>modal("Novo transporte",'<form id="fDmt" class="form"><div class="field"><label>Material</label><input name="material" required></div><div class="field"><label>Origem</label><input name="origin"></div><div class="field"><label>Destino</label><input name="destination"></div><div class="field"><label>Volume m³</label><input name="volume" type="number" step="any"></div><div class="field"><label>DMT km</label><input name="distance" type="number" step="any"></div><div class="field w6"><label>Evidência / rota</label><input name="evidence"></div><div class="field w12"><button class="btn">Salvar</button></div></form>');
+ setTimeout(()=>{let f=$("fDmt");if(f)f.onsubmit=e=>{e.preventDefault();let x=Object.fromEntries(new FormData(f));x.id=uid();x.projectId=projectId;x.volume=Number(x.volume||0);x.distance=Number(x.distance||0);db.dmt.push(x);save("DMT criado");closeModal();dmt()}},0)
+}
+function trace(){
+ if(!prj())return $("content").innerHTML='<div class="notice">Selecione um projeto.</div>';
+ let r=rows(db.trace).map(x=>'<tr><td class="mono">'+esc(x.item)+'</td><td>'+esc(x.service)+'</td><td>'+esc(x.document)+'</td><td>'+esc(x.locator)+'</td><td>'+esc(x.cpu)+'</td><td>'+esc(x.chain)+'</td></tr>');
+ $("content").innerHTML='<div class="card"><div class="head"><h2>Rastreabilidade</h2><button class="btn" id="addTrace">Novo vínculo</button></div>'+table(["Item","Serviço","Documento","Localização","CPU","Cadeia"],r)+'</div>';
+ $("addTrace").onclick=()=>modal("Novo vínculo",'<form id="fTrace" class="form"><div class="field"><label>Item</label><input name="item"></div><div class="field w6"><label>Serviço</label><input name="service"></div><div class="field w6"><label>Documento</label><input name="document"></div><div class="field w6"><label>Localização</label><input name="locator" placeholder="Prancha / Nota / página"></div><div class="field"><label>CPU</label><input name="cpu"></div><div class="field w12"><label>Cadeia</label><textarea name="chain" placeholder="Projeto → Quantidade → Método → CPU → Banco → Preço"></textarea></div><div class="field w12"><button class="btn">Salvar</button></div></form>');
+ setTimeout(()=>{let f=$("fTrace");if(f)f.onsubmit=e=>{e.preventDefault();let x=Object.fromEntries(new FormData(f));x.id=uid();x.projectId=projectId;db.trace.push(x);save("Rastreabilidade criada");closeModal();trace()}},0)
+}
+function pending(){
+ if(!prj())return $("content").innerHTML='<div class="notice">Selecione um projeto.</div>';
+ let r=rows(db.pending).map(x=>'<tr><td><b>'+esc(x.title)+'</b><div class="muted">'+esc(x.description||"")+'</div></td><td>'+esc(x.type)+'</td><td>'+esc(x.owner||"-")+'</td><td>'+badge(x.status)+'</td><td>'+esc(x.impact||"-")+'</td></tr>');
+ $("content").innerHTML='<div class="card"><div class="head"><h2>Premissas e Pendências</h2><button class="btn" id="addPend">Nova</button></div>'+table(["Título","Tipo","Responsável","Status","Impacto"],r)+'</div>';
+ $("addPend").onclick=()=>modal("Nova premissa / pendência",'<form id="fPend" class="form"><div class="field w6"><label>Título</label><input name="title" required></div><div class="field"><label>Tipo</label><select name="type"><option>Pendência</option><option>Premissa</option><option>Risco</option></select></div><div class="field"><label>Responsável</label><input name="owner"></div><div class="field w12"><label>Descrição</label><textarea name="description"></textarea></div><div class="field w6"><label>Impacto</label><input name="impact"></div><div class="field"><label>Status</label><select name="status"><option>Aberto</option><option>Em andamento</option><option>Resolvido</option></select></div><div class="field w12"><button class="btn">Salvar</button></div></form>');
+ setTimeout(()=>{let f=$("fPend");if(f)f.onsubmit=e=>{e.preventDefault();let x=Object.fromEntries(new FormData(f));x.id=uid();x.projectId=projectId;db.pending.push(x);save("Premissa/pendência criada");closeModal();pending()}},0)
+}
+function qa(){
+ let b=rows(db.budget),q=rows(db.qty),t=rows(db.trace),p=rows(db.pending).filter(x=>x.status!=="Resolvido");
+ let checks=[
+ ["Itens sem quantidade",b.filter(x=>!Number(x.qty)).length],
+ ["Itens sem CPU",b.filter(x=>!x.cpu).length],
+ ["Itens sem banco",b.filter(x=>!x.bank).length],
+ ["Itens sem rastreabilidade",b.filter(x=>!t.some(y=>y.item===x.item)).length],
+ ["Memórias a conferir",q.filter(x=>!/validado/i.test(x.status||"")).length],
+ ["Pendências abertas",p.length]
+ ];
+ $("content").innerHTML='<div class="grid">'+checks.map(x=>'<div class="card s4"><div class="label">'+x[0]+'</div><div class="kpi">'+x[1]+'</div><div>'+badge(x[1]===0?"OK":"Pendente")+'</div></div>').join("")+'<div class="card s12"><div class="notice">O QA/QC é indicativo. A liberação final deve considerar conferência técnica, contratual e de orçamento.</div></div></div>'
+}
+function audit(){
+ let r=db.audit.slice(0,500).map(x=>'<tr><td>'+new Date(x.at).toLocaleString("pt-BR")+'</td><td>'+esc(x.action)+'</td><td class="mono">'+esc(x.projectId||"-")+'</td></tr>');
+ $("content").innerHTML='<div class="card"><div class="head"><h2>Auditoria local</h2><span class="muted">Últimos 500 eventos</span></div>'+table(["Data","Ação","Projeto"],r)+'</div>'
+}
+function download(name,text,type){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:type||"application/json"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function backup(){
+ $("content").innerHTML='<div class="grid"><div class="card s6"><h2>Backup completo</h2><p class="muted">Guarda projetos, metadados, bancos importados, orçamento, rastreabilidade e auditoria.</p><div class="toolbar"><button class="btn" id="exportJson">Exportar JSON</button><label class="btn alt" style="display:inline-block">Importar JSON<input id="importJson" type="file" accept=".json" style="display:none"></label></div></div><div class="card s6"><h2>Exportar orçamento</h2><p class="muted">Exporta o projeto selecionado em CSV para abrir no Excel.</p><div class="toolbar"><button class="btn" id="exportCsv">Exportar CSV</button></div></div><div class="card s6"><h2>Configurações</h2><div class="form"><div class="field w6"><label>BDI padrão</label><input id="cfgBdi" type="number" step="any" value="'+(db.settings.bdi||0)+'"></div><div class="field w6"><label>Fator de atualização</label><input id="cfgFactor" type="number" step="any" value="'+(db.settings.updateFactor||1)+'"></div></div><div class="toolbar"><button class="btn" id="saveCfg">Salvar</button></div></div><div class="card s6"><h2>Limpar base local</h2><p class="muted">Faça backup antes. Esta ação apaga os dados deste navegador.</p><button class="btn red" id="clearDb">Limpar tudo</button></div></div>';
+ $("exportJson").onclick=()=>download("TIC_ORCA_BACKUP_"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(db,null,2));
+ $("importJson").onchange=e=>{let f=e.target.files[0],rd=new FileReader();rd.onload=ev=>{try{db=Object.assign({},empty,JSON.parse(ev.target.result));save("Backup importado");projectId=db.projects[0]&&db.projects[0].id||"";refreshSelect();backup();message("Backup importado com sucesso.","success")}catch(err){alert(err.message)}};rd.readAsText(f)};
+ $("exportCsv").onclick=()=>{let list=rows(db.budget),h=["ID","EAP","SERVICO","UN","QTD","CPU","BANCO","PU_BASE","FATOR","BDI","TOTAL","STATUS"],lines=[h.join(";")];list.forEach(x=>lines.push([x.item,x.eap,x.service,x.unit,x.qty,x.cpu,x.bank,x.pu,x.factor,x.bdi,x.total,x.status].map(v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"').join(";")));download("ORCAMENTO_"+(prj()?prj().code||prj().name:"GERAL")+".csv",lines.join("\n"),"text/csv;charset=utf-8")};
+ $("saveCfg").onclick=()=>{db.settings.bdi=Number($("cfgBdi").value||0);db.settings.updateFactor=Number($("cfgFactor").value||1);save("Configurações atualizadas");message("Configurações salvas.","success")};
+ $("clearDb").onclick=()=>{if(confirm("Apagar todos os dados locais do TIC Orça neste navegador?")){db=JSON.parse(JSON.stringify(empty));projectId="";save();refreshSelect();setPage("dash")}}
+}
+refreshSelect();render();
+})();
+</script>
+</body>
+</html>
